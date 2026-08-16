@@ -96,8 +96,6 @@ if (!$resultado['success']) {
 $usuario = $resultado['usuario'];
 
 
-
-
 session_regenerate_id(true);
 
 
