@@ -1,7 +1,59 @@
 <?php
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (
+    empty($_SESSION['autenticado']) ||
+    $_SESSION['autenticado'] !== true
+) {
+    header('Location: login.php');
+    exit;
+}
+
+$usuarioRol = strtoupper(
+    trim($_SESSION['usuario_rol'] ?? '')
+);
+
+if (!in_array($usuarioRol, ['ADMIN', 'COMERCIO'], true)) {
+    header('Location: inicio.php');
+    exit;
+}
+
+require_once __DIR__ . '/../model/catalogosmodelo.php';
+
 $mensaje = $_GET['mensaje'] ?? '';
 $tipo = $_GET['tipo'] ?? '';
+
+$comercios = [];
+$comercioUsuario = null;
+$errorComercio = '';
+
+try {
+
+    if ($usuarioRol === 'ADMIN') {
+
+        $comercios = CatalogosModel::obtenerComercios();
+
+    } elseif ($usuarioRol === 'COMERCIO') {
+
+        $comercioUsuario =
+            CatalogosModel::obtenerComercioPorUsuario(
+                $_SESSION['usuario_id']
+            );
+
+        if (!$comercioUsuario) {
+            $errorComercio =
+                'No existe un comercio asociado a este usuario.';
+        }
+    }
+
+} catch (Throwable $e) {
+
+    $errorComercio =
+        'No se pudieron cargar los comercios.';
+}
 
 ?>
 
@@ -12,213 +64,370 @@ $tipo = $_GET['tipo'] ?? '';
 
     <meta charset="UTF-8">
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <title>Agregar recompensa | EcoPuntos CR</title>
+    <title>
+        Agregar recompensa | EcoPuntos CR
+    </title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
 
-    <link rel="stylesheet" href="../assets/css/registro.css">
+    <link
+        rel="stylesheet"
+        href="../assets/css/registro.css"
+    >
+
+    <style>
+
+        body {
+            background: linear-gradient(
+                135deg,
+                #0d3b2c 0%,
+                #1c6d46 45%,
+                #0d3b2c 100%
+            );
+
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 0;
+        }
+
+        .register-shell {
+            width: min(1200px, 96%);
+            min-height: 82vh;
+            border-radius: 30px;
+        }
+
+        .register-layout {
+            min-height: 82vh;
+        }
+
+        .register-panel {
+            padding: 60px 42px;
+        }
+
+        .register-form-wrap {
+            padding: 52px 42px;
+        }
+
+        .field select,
+        .field input {
+            width: 100%;
+            border: 1px solid #d7e4dc;
+            border-radius: 12px;
+            background: #f9fcfa;
+            padding: 14px 16px;
+            font-size: 1rem;
+        }
+
+        .field select:focus,
+        .field input:focus {
+            outline: none;
+            border-color: rgba(13, 107, 69, 0.5);
+            box-shadow: 0 0 0 4px rgba(13, 107, 69, 0.08);
+        }
+
+        .comercio-fijo {
+            background: #eef6f1 !important;
+            color: #0d6b45;
+            font-weight: 700;
+        }
+
+    </style>
 
 </head>
 
 
 <body>
 
-    <div class="register-shell">
+<div class="register-shell">
 
-        <div class="register-layout">
-
-
-            <aside class="register-panel">
-
-                <div class="brand">
-
-                    <span class="brand-mark">
-                        E
-                    </span>
-
-                    <span>
-                        EcoPuntos CR
-                    </span>
-
-                </div>
+    <div class="register-layout">
 
 
-                <h1>
-                    Nueva recompensa
-                </h1>
+        <aside class="register-panel">
 
+            <div class="brand">
+
+                <span class="brand-mark">
+                    E
+                </span>
+
+                <span>
+                    EcoPuntos CR
+                </span>
+
+            </div>
+
+
+            <h1>
+                Nueva recompensa
+            </h1>
+
+
+            <p>
+                Registra beneficios que los usuarios
+                podrán canjear utilizando sus EcoPuntos.
+            </p>
+
+
+            <ul>
+
+                <li>
+                    Recompensas de comercios afiliados
+                </li>
+
+                <li>
+                    Canje mediante EcoPuntos
+                </li>
+
+                <li>
+                    Control de disponibilidad
+                </li>
+
+            </ul>
+
+        </aside>
+
+
+        <div class="register-form-wrap">
+
+
+            <div class="form-header">
+
+                <h2>
+                    Registrar recompensa
+                </h2>
 
                 <p>
-                    Solicita recompensas que los usuarios
-                    podrán obtener utilizando sus EcoPuntos.
+                    Completa la información de la recompensa.
                 </p>
 
-
-                <ul>
-
-                    <li>Beneficios para los usuarios</li>
-                    <li>Comercios afiliados</li>
-                    <li>Canje mediante EcoPuntos</li>
-
-                </ul>
-
-            </aside>
+            </div>
 
 
+            <?php if ($mensaje !== ''): ?>
 
-            <div class="register-form-wrap">
-
-
-                <div class="form-header">
-
-                    <h2>
-                        Solicitar recompensa
-                    </h2>
-
-                    <p>
-                        Completa la información de la nueva recompensa que deseas solicitar.
-                    </p>
-
-                </div>
-
-
-                <!-- MENSAJES -->
-
-                <?php if ($mensaje !== ''): ?>
-
-                <div class="alert <?= $tipo === 'exito'
+                <div
+                    class="alert <?= $tipo === 'exito'
                         ? 'alert-success'
                         : 'alert-danger'
-                    ?>">
+                    ?>"
+                >
 
                     <?= htmlspecialchars($mensaje) ?>
 
                 </div>
 
-                <?php endif; ?>
+            <?php endif; ?>
 
 
-                <form id="formAgregarRecompensa" method="post" action="../controller/controlleragregarrecompensa.php"
-                    novalidate>
+            <?php if ($errorComercio !== ''): ?>
+
+                <div class="alert alert-danger">
+
+                    <?= htmlspecialchars($errorComercio) ?>
+
+                </div>
+
+            <?php endif; ?>
 
 
-                    <div class="form-grid">
+            <form
+                id="formAgregarRecompensa"
+                method="post"
+                action="../controller/controlleragregarrecompensa.php"
+            >
 
 
-                        <!-- COMERCIO -->
-
-                        <div class="field full">
-
-                            <label for="nombreComercio">
-                                Nombre del comercio
-                            </label>
-
-                            <input id="nombreComercio" name="nombreComercio" type="text"
-                                placeholder="Ejemplo: Supermercado Verde" required>
-
-                            <div class="error-message" id="nombreComercioError"></div>
-
-                        </div>
+                <div class="form-grid">
 
 
-                        <!-- TÍTULO -->
+                    <div class="field full">
 
-                        <div class="field full">
-
-                            <label for="titulo">
-                                Título de la recompensa
-                            </label>
-
-                            <input id="titulo" name="titulo" type="text" placeholder="Ejemplo: Café gratis" required>
-
-                            <div class="error-message" id="tituloError"></div>
-
-                        </div>
+                        <label for="nombreComercio">
+                            Comercio
+                        </label>
 
 
-                        <!-- DESCRIPCIÓN -->
+                        <?php if ($usuarioRol === 'ADMIN'): ?>
 
-                        <div class="field full">
+                            <select
+                                id="nombreComercio"
+                                name="nombreComercio"
+                                required
+                            >
 
-                            <label for="descripcion">
-                                Descripción
-                            </label>
+                                <option value="">
+                                    Seleccione un comercio
+                                </option>
 
-                            <input id="descripcion" name="descripcion" type="text"
-                                placeholder="Ejemplo: Café americano gratuito" required>
+                                <?php foreach ($comercios as $comercio): ?>
 
-                            <div class="error-message" id="descripcionError"></div>
+                                    <option
+                                        value="<?= htmlspecialchars(
+                                            $comercio['NOMBRE_COMERCIO']
+                                        ) ?>"
+                                    >
 
-                        </div>
+                                        <?= htmlspecialchars(
+                                            $comercio['NOMBRE_COMERCIO']
+                                        ) ?>
 
+                                    </option>
 
-                        <!-- PUNTOS -->
+                                <?php endforeach; ?>
 
-                        <div class="field">
-
-                            <label for="puntosRequeridos">
-                                Puntos requeridos
-                            </label>
-
-                            <input id="puntosRequeridos" name="puntosRequeridos" type="number" min="1"
-                                placeholder="Ejemplo: 100" required>
-
-                            <div class="error-message" id="puntosRequeridosError"></div>
-
-                        </div>
+                            </select>
 
 
-                        <!-- STOCK -->
+                        <?php elseif (
+                            $usuarioRol === 'COMERCIO' &&
+                            $comercioUsuario
+                        ): ?>
 
-                        <div class="field">
+                            <input
+                                type="text"
+                                class="comercio-fijo"
+                                value="<?= htmlspecialchars(
+                                    $comercioUsuario['NOMBRE_COMERCIO']
+                                ) ?>"
+                                readonly
+                            >
 
-                            <label for="stockDisponible">
-                                Cantidad que desea solicitar
-                            </label>
+                            <input
+                                type="hidden"
+                                name="nombreComercio"
+                                value="<?= htmlspecialchars(
+                                    $comercioUsuario['NOMBRE_COMERCIO']
+                                ) ?>"
+                            >
 
-                            <input id="stockDisponible" name="stockDisponible" type="number" min="0"
-                                placeholder="Ejemplo: 20" required>
-
-                            <div class="error-message" id="stockDisponibleError"></div>
-
-                        </div>
-
+                        <?php endif; ?>
 
                     </div>
 
 
-                    <div class="form-actions">
+                    <div class="field full">
 
-                        <button type="submit" class="btn btn-primary">
-                            Guardar recompensa
-                        </button>
+                        <label for="titulo">
+                            Título de la recompensa
+                        </label>
 
-
-                        <div class="form-link">
-
-                            <a href="../inicio.php">
-                                Volver al inicio
-                            </a>
-
-                        </div>
+                        <input
+                            id="titulo"
+                            name="titulo"
+                            type="text"
+                            placeholder="Ejemplo: Café gratis"
+                            maxlength="150"
+                            required
+                        >
 
                     </div>
 
 
-                </form>
+                    <div class="field full">
 
-            </div>
+                        <label for="descripcion">
+                            Descripción
+                        </label>
+
+                        <input
+                            id="descripcion"
+                            name="descripcion"
+                            type="text"
+                            placeholder="Ejemplo: Café americano gratuito"
+                            maxlength="500"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="field">
+
+                        <label for="puntosRequeridos">
+                            Puntos requeridos
+                        </label>
+
+                        <input
+                            id="puntosRequeridos"
+                            name="puntosRequeridos"
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="Ejemplo: 100"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="field">
+
+                        <label for="stockDisponible">
+                            Cantidad disponible
+                        </label>
+
+                        <input
+                            id="stockDisponible"
+                            name="stockDisponible"
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="Ejemplo: 20"
+                            required
+                        >
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="form-actions">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        <?= $errorComercio !== '' ? 'disabled' : '' ?>
+                    >
+                        Guardar recompensa
+                    </button>
+
+
+                    <div class="form-link">
+
+                        <a href="inicio.php">
+                            Volver al inicio
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+            </form>
+
 
         </div>
 
     </div>
 
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
-    </script>
 
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+></script>
 
 </body>
 

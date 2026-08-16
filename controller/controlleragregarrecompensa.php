@@ -1,5 +1,27 @@
 <?php
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (
+    empty($_SESSION['autenticado']) ||
+    $_SESSION['autenticado'] !== true
+) {
+    header('Location: ../views/login.php');
+    exit;
+}
+
+$usuarioRol = strtoupper(
+    trim($_SESSION['usuario_rol'] ?? '')
+);
+
+if (!in_array($usuarioRol, ['ADMIN', 'COMERCIO'], true)) {
+    header('Location: ../views/inicio.php');
+    exit;
+}
+
+
 require_once __DIR__
     . '/../model/agregarrecompensamodelo.php';
 

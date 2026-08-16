@@ -1,24 +1,70 @@
 <?php
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/../model/resumenusuariomodelo.php';
+require_once __DIR__ . '/../model/estadisticasmodelo.php';
+
 $pageTitle = 'Inicio | EcoPuntos CR';
 
-$estaLogueado = (!empty($_SESSION['autenticado']) && $_SESSION['autenticado'] === true);
-$usuarioNombre = $_SESSION['usuario_nombre'] ?? $_SESSION['NombreUsuario'] ?? 'Usuario';
+$estaLogueado = (
+    !empty($_SESSION['autenticado']) &&
+    $_SESSION['autenticado'] === true
+);
+
+$usuarioNombre =
+    $_SESSION['usuario_nombre']
+    ?? $_SESSION['NombreUsuario']
+    ?? 'Usuario';
+$usuarioRol = strtoupper(
+    trim($_SESSION['usuario_rol'] ?? 'CIUDADANO')
+);
 
 $stats = [
-    'material' => 18420.75,
-    'co2' => 9428.40,
-    'usuarios' => 3452,
-    'entregas' => 12894,
+    'material' => 0,
+    'co2' => 0,
+    'usuarios' => 0,
+    'entregas' => 0
 ];
 
+try {
+    $stats = EstadisticasModel::obtenerEstadisticas();
+} catch (Throwable $e) {
+    $stats = [
+        'material' => 0,
+        'co2' => 0,
+        'usuarios' => 0,
+        'entregas' => 0
+    ];
+}
+
+
 $resumenUsuario = [
-    'puntos' => $_SESSION['usuario_puntos'] ?? 2450,
-    'cupones' => $_SESSION['usuario_cupones'] ?? 6,
+    'puntos' => 0,
+    'cupones' => 0
 ];
+
+
+if ($estaLogueado && !empty($_SESSION['usuario_id'])) {
+
+    try {
+
+        $resumenUsuario =
+            ResumenUsuarioModel::obtenerResumen(
+                $_SESSION['usuario_id']
+            );
+
+    } catch (Throwable $e) {
+
+        $resumenUsuario = [
+            'puntos' => 0,
+            'cupones' => 0
+        ];
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -316,15 +362,71 @@ $resumenUsuario = [
                 </a>
 
                 <div class="nav-actions">
-                    <?php if ($estaLogueado): ?>
-                        <a href="agregarmaterial.php" class="nav-item">Registrar material</a>
-                        <a href="agregarrecompensa.php" class="nav-item">Recompensas</a>
-                        <a href="#" class="nav-item">Mis puntos</a>
-                        <a href="#" class="nav-item">Información personal</a>
-                        <a href="#" class="nav-item">Más</a>
-                        <span class="text-muted fw-semibold">Hola, <strong><?= htmlspecialchars($usuarioNombre) ?></strong></span>
-                        <a href="../controller/controllecerrar.php" class="btn btn-outline-danger btn-sm">Cerrar sesión</a>
-                    <?php else: ?>
+                   <?php if ($estaLogueado): ?>
+
+    <?php if ($usuarioRol === 'CIUDADANO'): ?>
+
+        <a href="registrarentrega.php" class="nav-item">
+            Registrar entrega
+        </a>
+
+       <a href="recompensas.php" class="nav-item">
+            Recompensas
+        </a>
+
+       <a href="mispuntos.php" class="nav-item">
+            Mis puntos
+        </a>
+
+       <a href="misentregas.php" class="nav-item">
+            Mis entregas
+       </a>
+
+       <a href="miscupones.php" class="nav-item">
+            Mis cupones
+       </a>
+
+    <?php elseif ($usuarioRol === 'ADMIN'): ?>
+
+        <a href="agregarmaterial.php" class="nav-item">
+            Registrar material
+        </a>
+
+        <a href="agregarrecompensa.php" class="nav-item">
+            Registrar recompensa
+        </a>
+
+       <a href="estadisticas.php" class="nav-item">
+            Estadísticas
+        </a>
+
+    <?php elseif ($usuarioRol === 'COMERCIO'): ?>
+
+        <a href="agregarrecompensa.php" class="nav-item">
+            Registrar recompensa
+        </a>
+
+        <a href="#" class="nav-item">
+            Redimir cupón
+        </a>
+
+    <?php endif; ?>
+
+    <a href="perfil.php" class="nav-item">
+    Mi perfil
+    </a>
+
+    <span class="text-muted fw-semibold">
+        Hola,
+        <strong><?= htmlspecialchars($usuarioNombre) ?></strong>
+    </span>
+
+   <a href="../controller/controllercerrarsesion.php"
+   class="btn btn-outline-danger btn-sm">
+    Cerrar sesión
+</a>
+
+<?php else: ?>
                         <a href="login.php" class="btn btn-outline-success btn-sm">Iniciar sesión</a>
                         <a href="registro.php" class="btn btn-success btn-sm">Registrarse</a>
                     <?php endif; ?>
