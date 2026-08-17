@@ -33,6 +33,10 @@ try {
     $error = 'No se pudo cargar la información del perfil.';
 }
 
+$rolUsuario = strtoupper(
+    trim($_SESSION['usuario_rol'] ?? 'CIUDADANO')
+);
+
 ?>
 
 <!DOCTYPE html>
@@ -480,7 +484,7 @@ try {
                         <strong>
 
                             <?= htmlspecialchars(
-                                $perfil['ROL']
+                                $rolUsuario
                             ) ?>
 
                         </strong>

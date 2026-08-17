@@ -17,7 +17,6 @@ class PerfilModel
                 CORREO,
                 TELEFONO,
                 ESTADO,
-                ROL,
                 FECHA_REGISTRO
             FROM USUARIOS
             WHERE ID_USUARIO = :id_usuario
