@@ -96,8 +96,6 @@ if (!$resultado['success']) {
 $usuario = $resultado['usuario'];
 
 
-
-
 session_regenerate_id(true);
 
 
@@ -131,7 +129,8 @@ $_SESSION['usuario_telefono'] =
 $_SESSION['usuario_estado'] =
     $usuario['ESTADO'] ?? '';
 
-
+$_SESSION['usuario_rol'] =
+    $usuario['ROL'] ?? 'CIUDADANO';
 
 
 header(
